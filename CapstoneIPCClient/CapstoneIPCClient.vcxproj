@@ -141,11 +141,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\Application.cpp" />
+    <ClCompile Include="src\Application.ixx" />
     <ClCompile Include="src\GeneralUtil.cpp" />
     <ClCompile Include="src\GeneralUtil.ixx" />
     <ClCompile Include="src\IPCClient.cpp" />
     <ClCompile Include="src\IPCClient.ixx" />
-    <ClCompile Include="src\IPCConcepts.ixx" />
+    <ClCompile Include="src\IPCMessageIDMap.ixx" />
+    <ClCompile Include="src\IPCMessageID.ixx" />
+    <ClCompile Include="src\IPCServerResult.ixx" />
     <ClCompile Include="src\Main.cpp" />
     <ClCompile Include="src\SafeHandle.ixx" />
     <ClCompile Include="src\Win32Util.cpp" />
