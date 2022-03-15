@@ -6,13 +6,15 @@ module;
 
 export module Capstone.IPCClient;
 import Capstone.SafeHandle;
-import Capstone.IPCConcepts;
+import Capstone.IPCMessageIDMap;
+import Capstone.IPCMessageID;
 
 export namespace Capstone
 {
 	class IPCClient
 	{
 	public:
+		IPCClient() = default;
 		explicit IPCClient(const std::wstring_view pipeName);
 
 		IPCClient(const IPCClient& rhs) = delete;
@@ -21,34 +23,10 @@ export namespace Capstone
 		IPCClient(IPCClient&& rhs) noexcept = default;
 		IPCClient& operator=(IPCClient&& rhs) noexcept = default;
 
-		/// <summary>
-		/// Initiates a send-receive message call through the pipe. The data specified by dataToSend
-		/// is the data which is to be sent through the pipe to the server. The return value of this
-		/// function is the response data received from the server as a result of processing this
-		/// message.
-		/// 
-		/// The types of the sent and received data are deduced from the MessageType parameter; see
-		/// its documentation for more details.
-		/// </summary>
-		/// <typeparam name="MessageType">
-		/// - This is a type which must satisfy the Capstone::PipeMessage concept, i.e., it must have
-		///   two fields: SentData, which describes the data sent to the server, and ReceivedData,
-		///   which describes the data received from the server. (See IPCConcepts.ixx for its
-		///   implementation.)
-		/// </typeparam>
-		/// <param name="dataToSend">
-		/// - The data which is to be sent to the server.
-		/// </param>
-		/// <returns>
-		/// The function returns the data which was received from the server as a result of processing
-		/// this message.
-		/// </returns>
-		template <typename MessageType>
-			requires PipeMessage<MessageType>
-		ReceivedDataType<MessageType> TransactPipe(const SentDataType<MessageType>& dataToSend);
-
-	private:
 		void ConnectToNamedPipe(const std::wstring_view pipeName);
+
+		template <IPCMessageID MessageID>
+		MessageReceivedDataType<MessageID> TransactPipe(const MessageSentDataType<MessageID>& dataToSend);
 
 	private:
 		SafeHandle mHPipe;
@@ -59,11 +37,12 @@ export namespace Capstone
 
 namespace Capstone
 {
-	template <typename MessageType>
-		requires PipeMessage<MessageType>
-	ReceivedDataType<MessageType> IPCClient::TransactPipe(const SentDataType<MessageType>& dataToSend)
+	template <IPCMessageID MessageID>
+	MessageReceivedDataType<MessageID> IPCClient::TransactPipe(const MessageSentDataType<MessageID>& dataToSend)
 	{
-		ReceivedDataType<MessageType> receivedData;
+		assert(mHPipe != nullptr && "ERROR: An attempt was made to call IPCClient::TransactPipe() before a connection to the IPC server could be established!");
+		
+		MessageReceivedDataType<MessageID> receivedData;
 		std::uint32_t numBytesRead = 0;
 
 		const BOOL result = TransactNamedPipe(
@@ -82,7 +61,7 @@ namespace Capstone
 
 			// If lastError == ERROR_MORE_DATA, then we did not provide a large enough type to hold
 			// the response data. In that case, we must have created our MessageType incorrectly.
-			assert(lastError != ERROR_MORE_DATA && "ERROR: An invalid response data type was specified for a MessageType used in IPCClient::TransactPipe()!");
+			assert(lastError != ERROR_MORE_DATA && "ERROR: The IPC server responded with more data than what was expected for a given IPCMessageID!");
 
 			throw std::runtime_error{ std::string{ "ERROR: TransactNamedPipe() failed during a call to IPCClient::TransactPipe() with error #" } + std::to_string(lastError) + "!" };
 		}

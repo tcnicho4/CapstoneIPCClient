@@ -54,8 +54,20 @@
     <ClCompile Include="src\IPCClient.cpp">
       <Filter>Source Files\IPC</Filter>
     </ClCompile>
-    <ClCompile Include="src\IPCConcepts.ixx">
+    <ClCompile Include="src\IPCMessageIDMap.ixx">
       <Filter>Module Files\IPC</Filter>
+    </ClCompile>
+    <ClCompile Include="src\IPCMessageID.ixx">
+      <Filter>Module Files\IPC</Filter>
+    </ClCompile>
+    <ClCompile Include="src\IPCServerResult.ixx">
+      <Filter>Module Files\IPC</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Application.ixx">
+      <Filter>Module Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Application.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
