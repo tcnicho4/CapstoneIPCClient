@@ -152,6 +152,8 @@
     <ClCompile Include="src\IPCServerResult.ixx" />
     <ClCompile Include="src\Main.cpp" />
     <ClCompile Include="src\SafeHandle.ixx" />
+    <ClCompile Include="src\UserCommandManager.cpp" />
+    <ClCompile Include="src\UserCommandManager.ixx" />
     <ClCompile Include="src\Win32Util.cpp" />
     <ClCompile Include="src\Win32Util.ixx" />
   </ItemGroup>
