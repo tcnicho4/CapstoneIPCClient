@@ -111,7 +111,7 @@ namespace Capstone
 			nullptr
 		);
 
-		if(!result)
+		if (!result) [[unlikely]]
 			throw std::runtime_error{ std::string{ "ERROR: ReadFile() failed during a call to IPCClient::TransactPipe() with error #" } + std::to_string(GetLastError()) + "!" };
 
 		assert(numBytesRead == sizeof(receivedData));
