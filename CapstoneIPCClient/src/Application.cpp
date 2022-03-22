@@ -23,7 +23,7 @@ namespace Capstone
 
 	Application& Application::GetInstance()
 	{
-		static Application& instance{};
+		static Application instance{};
 		return instance;
 	}
 }

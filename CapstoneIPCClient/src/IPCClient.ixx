@@ -2,6 +2,7 @@ module;
 #include <string>
 #include <stdexcept>
 #include <cassert>
+#include <memory>
 #include "Win32Def.h"
 
 export module Capstone.IPCClient;
@@ -26,7 +27,7 @@ export namespace Capstone
 		void ConnectToNamedPipe(const std::wstring_view pipeName);
 
 		template <IPCMessageID MessageID>
-		MessageReceivedDataType<MessageID> TransactPipe(const MessageSentDataType<MessageID>& dataToSend);
+		MessageReceivedDataType<MessageID> TransactPipe(MessageSentDataType<MessageID>&& dataToSend);
 
 	private:
 		SafeHandle mHPipe;
@@ -38,20 +39,30 @@ export namespace Capstone
 namespace Capstone
 {
 	template <IPCMessageID MessageID>
-	MessageReceivedDataType<MessageID> IPCClient::TransactPipe(const MessageSentDataType<MessageID>& dataToSend)
+	MessageReceivedDataType<MessageID> IPCClient::TransactPipe(MessageSentDataType<MessageID>&& dataToSend)
 	{
+		struct IPCMessage
+		{
+			IPCMessageID MsgID;
+			MessageSentDataType<MessageID> Data;
+		};
+		
 		assert(mHPipe != nullptr && "ERROR: An attempt was made to call IPCClient::TransactPipe() before a connection to the IPC server could be established!");
 		
 		MessageReceivedDataType<MessageID> receivedData;
 		std::uint32_t numBytesRead = 0;
+		IPCMessage messageToSend{
+			.MsgID = MessageID,
+			.Data{ std::move(dataToSend) }
+		};
 
 		const BOOL result = TransactNamedPipe(
 			mHPipe.get(),
-			&dataToSend,
-			sizeof(dataToSend),
+			&messageToSend,
+			sizeof(messageToSend),
 			&receivedData,
 			sizeof(receivedData),
-			&numBytesRead,
+			reinterpret_cast<unsigned long*>(&numBytesRead),
 			nullptr
 		);
 

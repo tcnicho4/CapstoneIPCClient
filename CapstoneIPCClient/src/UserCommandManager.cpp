@@ -40,7 +40,7 @@ namespace Capstone
 			// Clamp the throttle.
 			throttle = std::clamp(throttle, 0.0f, 1.0f);
 
-			return client.TransactPipe<IPCMessageID::REQUEST_THROTTLE>(throttle);
+			return client.TransactPipe<IPCMessageID::REQUEST_THROTTLE>(std::move(throttle));
 		};
 	}
 }
