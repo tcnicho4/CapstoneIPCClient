@@ -5,11 +5,7 @@ module;
 export module Capstone.UserCommandManager;
 import Capstone.IPCMessageID;
 import Capstone.IPCServerResult;
-
-export namespace Capstone
-{
-	class IPCClient;
-}
+import Capstone.IPCClient;
 
 export namespace Capstone
 {
@@ -24,10 +20,15 @@ export namespace Capstone
 		UserCommandManager(UserCommandManager&& rhs) noexcept = default;
 		UserCommandManager& operator=(UserCommandManager&& rhs) noexcept = default;
 
-	private:
-		void RegisterMessageCommands();
+		void ProcessUserInput();
 
 	private:
-		std::array<std::function<IPCServerResult(IPCClient&)>, std::to_underlying(IPCMessageID::COUNT_OR_ERROR)> mMessageCmdMap;
+		void RegisterMessageCommands();
+		IPCMessageID GetMessageIDFromUserInput() const;
+		IPCServerResult ExecuteMessageCommand(const IPCMessageID messageID) const;
+
+	private:
+		std::array<std::function<IPCServerResult(const IPCClient&)>, std::to_underlying(IPCMessageID::COUNT_OR_ERROR)> mMessageCmdMap;
+		IPCClient mIPCClient;
 	};
 }

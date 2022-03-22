@@ -27,7 +27,7 @@ export namespace Capstone
 		void ConnectToNamedPipe(const std::wstring_view pipeName);
 
 		template <IPCMessageID MessageID>
-		MessageReceivedDataType<MessageID> TransactPipe(MessageSentDataType<MessageID>&& dataToSend);
+		MessageReceivedDataType<MessageID> TransactPipe(MessageSentDataType<MessageID>&& dataToSend) const;
 
 	private:
 		SafeHandle mHPipe;
@@ -39,46 +39,75 @@ export namespace Capstone
 namespace Capstone
 {
 	template <IPCMessageID MessageID>
-	MessageReceivedDataType<MessageID> IPCClient::TransactPipe(MessageSentDataType<MessageID>&& dataToSend)
+	MessageReceivedDataType<MessageID> IPCClient::TransactPipe(MessageSentDataType<MessageID>&& dataToSend) const
 	{
+		// Pack the generated structure tightly. That way, we don't have to worry
+		// about alignment issues when receiving the data on the server.
+#pragma pack(push, 1)
 		struct IPCMessage
 		{
 			IPCMessageID MsgID;
 			MessageSentDataType<MessageID> Data;
 		};
+#pragma pack(pop)
 		
 		assert(mHPipe != nullptr && "ERROR: An attempt was made to call IPCClient::TransactPipe() before a connection to the IPC server could be established!");
 		
-		MessageReceivedDataType<MessageID> receivedData;
-		std::uint32_t numBytesRead = 0;
+		std::uint32_t numBytesWritten = 0;
 		IPCMessage messageToSend{
 			.MsgID = MessageID,
 			.Data{ std::move(dataToSend) }
 		};
 
-		const BOOL result = TransactNamedPipe(
+		std::uint32_t numBytesWritten = 0;
+
+		BOOL result = WriteFile(
 			mHPipe.get(),
 			&messageToSend,
 			sizeof(messageToSend),
-			&receivedData,
-			sizeof(receivedData),
-			reinterpret_cast<unsigned long*>(&numBytesRead),
+			reinterpret_cast<LPDWORD>(&numBytesWritten),
 			nullptr
 		);
 
 		if (!result) [[unlikely]]
+			throw std::runtime_error{ std::string{ "ERROR: WriteFile() failed during a call to IPCClient::TransactPipe() with error #" } + std::to_string(GetLastError()) + "!" };
+
+		assert(numBytesWritten == sizeof(messageToSend));
+
+		// Wait for the stream to be written to by the IPC server.
+
+		MessageReceivedDataType<MessageID> receivedData;
+		std::uint32_t numBytesRead = 0;
+
+		
+
+		while (numBytesRead != sizeof(receivedData))
 		{
-			const std::uint32_t lastError = GetLastError();
+			hEvent.reset(CreateEvent(nullptr, TRUE, FALSE, nullptr));
 
-			// If lastError == ERROR_MORE_DATA, then we did not provide a large enough type to hold
-			// the response data. In that case, we must have created our MessageType incorrectly.
-			assert(lastError != ERROR_MORE_DATA && "ERROR: The IPC server responded with more data than what was expected for a given IPCMessageID!");
+			OVERLAPPED readFileOverlapped{};
+			readFileOverlapped.hEvent = hEvent.get();
 
-			throw std::runtime_error{ std::string{ "ERROR: TransactNamedPipe() failed during a call to IPCClient::TransactPipe() with error #" } + std::to_string(lastError) + "!" };
+			result = ReadFile(
+				mHPipe.get(),
+				&receivedData,
+				(sizeof(receivedData) - numBytesRead),
+				nullptr,
+				&readFileOverlapped
+			);
+
+			if (!result && GetLastError() != ERROR_IO_PENDING) [[unlikely]]
+				throw std::runtime_error{ std::string{ "ERROR: ReadFile() failed during a call to IPCClient::TransactPipe() with error #" } + std::to_string(GetLastError()) + "!" };
+
+			std::uint32_t numBytesReadThisCall = 0;
+
+			// Wait for the read to finish.
+
+			BOOL getReadResult = GetOverlappedResult(mHPipe.get(), &readFileOverlapped, reinterpret_cast<LPDWORD>(&numBytesReadThisCall), TRUE);
+			assert(getReadResult);
+			
+			numBytesRead += numBytesReadThisCall;
 		}
-
-		// This should always pass if result == TRUE, according to the documentation.
-		assert(numBytesRead == sizeof(receivedData));
 
 		return receivedData;
 	}

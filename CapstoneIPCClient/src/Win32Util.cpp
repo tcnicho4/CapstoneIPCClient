@@ -39,6 +39,9 @@ namespace
 		case Util::Win32::ConsoleFormat::NORMAL:
 			return std::wstring{ L"\x1b[22;39m" } + std::wstring{ msg } + L"\x1b[0m\n";
 
+		case Util::Win32::ConsoleFormat::SUCCESS:
+			return std::wstring{ L"\x1b[22;32m" } + std::wstring{ msg } + L"\x1b[0m\n";
+
 		case Util::Win32::ConsoleFormat::WARNING:
 			return std::wstring{ L"\x1b[22;33m" } + std::wstring{ msg } + L"\x1b[0m\n";
 

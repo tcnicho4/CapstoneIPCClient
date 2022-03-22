@@ -1,10 +1,11 @@
 module;
+#include <cstdint>
 
 export module Capstone.IPCServerResult;
 
 export namespace Capstone
 {
-	enum class IPCServerResult
+	enum class IPCServerResult : std::int32_t
 	{
 		/// <summary>
 		/// This result indicates that the IPC server successfully received and

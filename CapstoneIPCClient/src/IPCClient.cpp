@@ -22,14 +22,16 @@ namespace Capstone
 			Util::Win32::WriteFormattedConsoleMessage(connectingMsg, Util::Win32::ConsoleFormat::NORMAL);
 		}
 
+		const std::wstring connectionPipeName{ L"\\\\.\\pipe\\" + std::wstring{pipeName} };
+		
 		// Wait for the pipe to become available. The function returns immediately if the
 		// pipe does not exist, so we must wait here in a loop.
-		while (!WaitNamedPipe(pipeName.data(), NMPWAIT_WAIT_FOREVER));
+		while (!WaitNamedPipe(connectionPipeName.c_str(), NMPWAIT_WAIT_FOREVER));
 
 		// Create the pipe connection.
 		{
 			HANDLE hPipe = CreateFile(
-				pipeName.data(),
+				connectionPipeName.c_str(),
 				(GENERIC_READ | GENERIC_WRITE),
 				0,
 				nullptr,
@@ -42,20 +44,6 @@ namespace Capstone
 				throw std::runtime_error{ std::string{ "ERROR: CreateFile() failed to open the pipe " } + Util::General::WStringToString(pipeName) + "!" };
 
 			mHPipe = SafeHandle{ hPipe };
-		}
-		
-		// Set the pipe handle to message mode.
-		{
-			DWORD dwPipeMode = PIPE_READMODE_MESSAGE;
-			const BOOL setStateResult = SetNamedPipeHandleState(
-				mHPipe.get(),
-				&dwPipeMode,
-				nullptr,
-				nullptr
-			);
-
-			if (!setStateResult) [[unlikely]]
-				throw std::runtime_error{ std::string{ "ERROR: SetNamedPipeHandleState() failed to set the pipe state with error #" } + std::to_string(GetLastError()) + "!" };
 		}
 	}
 }

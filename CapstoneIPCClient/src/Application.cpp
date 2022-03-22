@@ -2,6 +2,7 @@ module;
 
 module Capstone.Application;
 import Util.Win32;
+import Capstone.UserCommandManager;
 
 namespace Capstone
 {
@@ -18,7 +19,8 @@ namespace Capstone
 
 	void Application::RunIMPL()
 	{
-		// TODO: Implement the application logic here.
+		UserCommandManager cmdManager{};
+		cmdManager.ProcessUserInput();
 	}
 
 	Application& Application::GetInstance()

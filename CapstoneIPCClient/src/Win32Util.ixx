@@ -10,6 +10,7 @@ export namespace Util
 		enum class ConsoleFormat
 		{
 			NORMAL,
+			SUCCESS,
 			WARNING,
 			CRITICAL_ERROR
 		};
